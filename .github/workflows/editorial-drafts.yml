@@ -1,0 +1,46 @@
+
+name: Prepare editorial drafts
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '15 12 * * *'
+    - cron: '45 13 * * 0'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Generate research drafts
+        run: |
+          if [ "$(date -u +%u)" = "7" ] && [ "$(date -u +%H)" = "13" ]; then
+            python scripts/build_briefings.py weekly
+          else
+            python scripts/build_briefings.py daily
+          fi
+
+      - name: Create editorial review request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "Prepare presidential research drafts"
+          branch: editorial/research-drafts
+          delete-branch: true
+          title: "Editorial review: presidential briefing drafts"
+          body: |
+            Research drafts are ready for review.
+            Verify sources and dates before publication.
+          add-paths: |
+            drafts/**
